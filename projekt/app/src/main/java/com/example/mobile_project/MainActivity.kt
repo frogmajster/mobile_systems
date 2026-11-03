@@ -66,7 +66,7 @@ fun Mobile_projectApp() {
                 when (currentDestination) {
                     AppDestinations.HOME -> HomeScreen()
 
-                    AppDestinations.TEAMS -> TeamsScreen()
+                    AppDestinations.TEAMS -> ZespolyScreen()
 
                     AppDestinations.ATTENDANCE -> AttendanceScreen()
 
