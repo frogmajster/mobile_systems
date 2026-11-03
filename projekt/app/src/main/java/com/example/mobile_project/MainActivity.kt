@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import com.example.mobile_project.ui.theme.Mobile_projectTheme
-
+import androidx.compose.foundation.layout.Box
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,10 +57,22 @@ fun Mobile_projectApp() {
         }
     ) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            Greeting(
-                name = "Android",
-                modifier = Modifier.padding(innerPadding)
-            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                when (currentDestination) {
+                    AppDestinations.HOME -> HomeScreen()
+
+                    AppDestinations.TEAMS -> TeamsScreen()
+
+                    AppDestinations.ATTENDANCE -> AttendanceScreen()
+
+                    AppDestinations.PROFILE -> ProfileScreen()
+                }
+            }
         }
     }
 }
@@ -70,8 +82,9 @@ enum class AppDestinations(
     val icon: Int,
 ) {
     HOME("Home", R.drawable.ic_home),
-    FAVORITES("Favorites", R.drawable.ic_favorite),
-    PROFILE("Profile", R.drawable.ic_account_box),
+    TEAMS("Zespoły", R.drawable.team),
+    ATTENDANCE("Obecność", R.drawable.baseline_calendar_month_24),
+    PROFILE("Profil", R.drawable.ic_account_box),
 }
 
 @Composable
