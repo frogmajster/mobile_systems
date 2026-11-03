@@ -32,7 +32,7 @@ fun HomeScreen() {
         Text(   text="Home Screen", Modifier.padding(16.dp))
         Spacer(modifier = Modifier.height(150.dp))
         AndroidView(
-            modifier = Modifier.fillMaxWidth().height(200.dp).padding(20.dp),
+            modifier = Modifier.fillMaxWidth().height(250.dp).padding(20.dp),
             factory = { context ->
                 LayoutInflater.from(context)
                     .inflate(R.layout.list_item, null)
@@ -45,7 +45,7 @@ fun HomeScreen() {
             }
 
         )
-        Spacer(modifier = Modifier.height(100.dp))
+        Spacer(modifier = Modifier.height(80.dp))
         Text(text="OGŁOSZENIA I AKTUALNOŚCI", Modifier.padding(16.dp) )
 
         AndroidView(modifier = Modifier.fillMaxWidth().height(180.dp),
