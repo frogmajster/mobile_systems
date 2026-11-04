@@ -2,6 +2,7 @@ package com.example.mobile_project
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Group
@@ -28,6 +29,7 @@ data class Team(
 @Composable
 fun ZespolyScreen() {
     var searchQuery by remember { mutableStateOf("") }
+    var selectedTag by remember { mutableStateOf<String?>(null) }
 
     // Przykładowe dane zespołów koła DNS
     val teams = listOf(
@@ -38,10 +40,18 @@ fun ZespolyScreen() {
         Team(5, "Cyberbezpieczeństwo", "Analiza zabezpieczeń i testy penetracyjne.", 3, 5, listOf("Python", "Bash", "Linux"))
     )
 
+    // Unikalne tagi ze wszystkich zespołów posortowane alfabetycznie
+    val allTags = remember(teams) {
+        teams.flatMap { it.tags }.distinct().sorted()
+    }
+
     // Filtrowanie listy po nazwie zespołu lub tagach
-    val filteredTeams = teams.filter {
-        it.name.contains(searchQuery, ignoreCase = true) ||
-        it.tags.any { tag -> tag.contains(searchQuery, ignoreCase = true) }
+    val filteredTeams = teams.filter { team ->
+        val matchesSearch = team.name.contains(searchQuery, ignoreCase = true) ||
+                            team.tags.any { tag -> tag.contains(searchQuery, ignoreCase = true) }
+        val matchesTag = selectedTag == null || team.tags.contains(selectedTag)
+
+        matchesSearch && matchesTag
     }
 
     Column(
@@ -64,6 +74,25 @@ fun ZespolyScreen() {
             )
         )
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Poziome menu ze wszystkimi tagami
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(allTags) { tag ->
+                FilterChip(
+                    selected = tag == selectedTag,
+                    onClick = {
+                        // Kliknięcie tego samego odznacza tag
+                        selectedTag = if (selectedTag == tag) null else tag
+                    },
+                    label = { Text(tag) }
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
 
         // Lista zespołów
@@ -72,7 +101,12 @@ fun ZespolyScreen() {
             modifier = Modifier.fillMaxSize()
         ) {
             items(filteredTeams) { team ->
-                TeamCard(team)
+                TeamCard(
+                    team = team,
+                    onTagClick = { clickedTag ->
+                        selectedTag = if (selectedTag == clickedTag) null else clickedTag
+                    }
+                )
             }
         }
     }
@@ -80,8 +114,10 @@ fun ZespolyScreen() {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TeamCard(team: Team) {
+fun TeamCard(team: Team, onTagClick: (String) -> Unit) {
     val availableSpots = team.maxMembers - team.membersCount
+    // Lokalny stan przycisku: false = domyślny, true = wysłano prośbę
+    var isRequested by remember { mutableStateOf(false) }
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -152,7 +188,7 @@ fun TeamCard(team: Team) {
             ) {
                 team.tags.forEach { tag ->
                     SuggestionChip(
-                        onClick = { /* TODO: Filtr po tagu, połączone z wyszukiwarką */ },
+                        onClick = { onTagClick(tag) },
                         label = { Text(tag) }
                     )
                 }
@@ -160,17 +196,21 @@ fun TeamCard(team: Team) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Przycisk "Dołącz"
+            // Przycisk "Dołącz / Oczekujące"
             Button(
-                onClick = { /* TODO: Obsługa logiki wysyłania prośby do bazy/administratora */ },
+                onClick = { isRequested = true },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = availableSpots > 0, // Wyłącz przycisk, jeśli nie ma miejsc
+                enabled = availableSpots > 0 && !isRequested, // Wyłącz jeśli brak miejsc lub już wysłano prośbę
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(
-                    text = if (availableSpots > 0) "Wyślij prośbę o dołączenie" else "Zespół pełny",
+                    text = when {
+                        isRequested -> "Oczekiwanie na zaakceptowanie"
+                        availableSpots > 0 -> "Wyślij prośbę o dołączenie"
+                        else -> "Zespół pełny"
+                    },
                     fontWeight = FontWeight.Bold
                 )
             }
