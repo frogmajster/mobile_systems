@@ -30,7 +30,7 @@ fun HomeScreen() {
     val items = populateCarousel()
     Column(modifier= Modifier.fillMaxSize()) {
         Text(   text="Home Screen", Modifier.padding(16.dp))
-        Spacer(modifier = Modifier.height(150.dp))
+        Spacer(modifier = Modifier.height(30.dp))
         AndroidView(
             modifier = Modifier.fillMaxWidth().height(250.dp).padding(20.dp),
             factory = { context ->
