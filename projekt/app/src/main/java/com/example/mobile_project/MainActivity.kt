@@ -38,6 +38,10 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Mobile_projectApp() {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
+    
+    // Stan globalny dla prośby o dołączenie. 
+    // Trzymany na poziomie głównej aplikacji, aby przetrwał zmianę zakładek.
+    var pendingRequestTeamId by rememberSaveable { mutableStateOf<Int?>(null) }
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -66,11 +70,17 @@ fun Mobile_projectApp() {
                 when (currentDestination) {
                     AppDestinations.HOME -> HomeScreen()
 
-                    AppDestinations.TEAMS -> ZespolyScreen()
+                    AppDestinations.TEAMS -> ZespolyScreen(
+                        pendingTeamId = pendingRequestTeamId,
+                        onRequestJoin = { teamId -> pendingRequestTeamId = teamId },
+                        onCancelRequest = { pendingRequestTeamId = null }
+                    )
 
                     AppDestinations.ATTENDANCE -> AttendanceScreen()
 
-                    AppDestinations.PROFILE -> ProfileScreen()
+                    AppDestinations.PROFILE -> ProfileScreen(
+                        pendingTeamId = pendingRequestTeamId
+                    )
                 }
             }
         }
