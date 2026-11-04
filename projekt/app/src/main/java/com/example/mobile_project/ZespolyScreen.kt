@@ -6,12 +6,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -27,7 +29,11 @@ data class Team(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ZespolyScreen() {
+fun ZespolyScreen(
+    pendingTeamId: Int? = null,
+    onRequestJoin: (Int) -> Unit = {},
+    onCancelRequest: () -> Unit = {}
+) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedTag by remember { mutableStateOf<String?>(null) }
 
@@ -54,70 +60,126 @@ fun ZespolyScreen() {
         matchesSearch && matchesTag
     }
 
+    // Jeśli wysłano prośbę, pokazujemy ekran oczekiwania. W przeciwnym razie pokazujemy główną listę.
+    val pendingTeam = teams.find { it.id == pendingTeamId }
+    
+    if (pendingTeam != null) {
+        PendingRequestView(
+            team = pendingTeam,
+            onCancelRequest = onCancelRequest
+        )
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            // Wyszukiwarka
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Szukaj zespołu lub technologii (np. Python)...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Szukaj") },
+                shape = MaterialTheme.shapes.extraLarge,
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Poziome menu ze wszystkimi tagami
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(allTags) { tag ->
+                    FilterChip(
+                        selected = tag == selectedTag,
+                        onClick = {
+                            // Kliknięcie tego samego odznacza tag
+                            selectedTag = if (selectedTag == tag) null else tag
+                        },
+                        label = { Text(tag) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Lista zespołów
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(filteredTeams) { team ->
+                    TeamCard(
+                        team = team,
+                        onTagClick = { clickedTag ->
+                            selectedTag = if (selectedTag == clickedTag) null else clickedTag
+                        },
+                        onRequestJoin = {
+                            onRequestJoin(team.id)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PendingRequestView(team: Team, onCancelRequest: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        // Wyszukiwarka
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Szukaj zespołu lub technologii (np. Python)...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Szukaj") },
-            shape = MaterialTheme.shapes.extraLarge,
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-            )
+        Icon(
+            imageVector = Icons.Default.HourglassEmpty,
+            contentDescription = "Oczekiwanie",
+            modifier = Modifier.size(100.dp),
+            tint = MaterialTheme.colorScheme.primary
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        // Poziome menu ze wszystkimi tagami
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(allTags) { tag ->
-                FilterChip(
-                    selected = tag == selectedTag,
-                    onClick = {
-                        // Kliknięcie tego samego odznacza tag
-                        selectedTag = if (selectedTag == tag) null else tag
-                    },
-                    label = { Text(tag) }
-                )
-            }
-        }
+        Text(
+            text = "Prośba wysłana!",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Lista zespołów
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxSize()
+        Text(
+            text = "Twoja prośba o dołączenie do zespołu \"${team.name}\" oczekuje na weryfikację przez lidera.",
+            fontSize = 16.sp,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        OutlinedButton(
+            onClick = onCancelRequest,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            items(filteredTeams) { team ->
-                TeamCard(
-                    team = team,
-                    onTagClick = { clickedTag ->
-                        selectedTag = if (selectedTag == clickedTag) null else clickedTag
-                    }
-                )
-            }
+            Text("Anuluj prośbę")
         }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TeamCard(team: Team, onTagClick: (String) -> Unit) {
+fun TeamCard(team: Team, onTagClick: (String) -> Unit, onRequestJoin: () -> Unit) {
     val availableSpots = team.maxMembers - team.membersCount
-    // Lokalny stan przycisku: false = domyślny, true = wysłano prośbę
-    var isRequested by remember { mutableStateOf(false) }
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -196,21 +258,17 @@ fun TeamCard(team: Team, onTagClick: (String) -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Przycisk "Dołącz / Oczekujące"
+            // Przycisk "Dołącz"
             Button(
-                onClick = { isRequested = true },
+                onClick = onRequestJoin,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = availableSpots > 0 && !isRequested, // Wyłącz jeśli brak miejsc lub już wysłano prośbę
+                enabled = availableSpots > 0, // Wyłącz jeśli brak miejsc
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(
-                    text = when {
-                        isRequested -> "Oczekiwanie na zaakceptowanie"
-                        availableSpots > 0 -> "Wyślij prośbę o dołączenie"
-                        else -> "Zespół pełny"
-                    },
+                    text = if (availableSpots > 0) "Wyślij prośbę o dołączenie" else "Zespół pełny",
                     fontWeight = FontWeight.Bold
                 )
             }
